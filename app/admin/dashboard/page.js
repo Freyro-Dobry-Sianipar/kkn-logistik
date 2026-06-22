@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
-import { Plus, Edit, Trash2, AlertTriangle, Package, Calendar, Box, Activity, Download, Image as ImageIcon, Check, X, History } from "lucide-react";
+import { Plus, Edit, Trash2, AlertTriangle, Package, Calendar, Box, Activity, Download, Image as ImageIcon, Check, X, History, ClipboardList, Wrench, ShieldCheck, Menu } from "lucide-react";
 import Link from "next/link";
 import * as XLSX from 'xlsx';
 
@@ -269,66 +269,75 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-4 border-b border-gray-200 dark:border-gray-800">
-        <button 
-          className={`pb-4 px-2 font-medium transition-colors ${activeTab === 'inventaris' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 hover:text-gray-800'}`}
-          onClick={() => setActiveTab('inventaris')}
-        >
-          Katalog Inventaris
-        </button>
-        <button 
-          className={`pb-4 px-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'kebutuhan' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-800'}`}
-          onClick={() => setActiveTab('kebutuhan')}
-        >
-          Daftar Kebutuhan {kebutuhanItems.length > 0 && <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">{kebutuhanItems.length}</span>}
-        </button>
-        <button 
-          className={`pb-4 px-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'maintenance' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-500 hover:text-gray-800'}`}
-          onClick={() => setActiveTab('maintenance')}
-        >
-          Maintenance {maintenanceItems.length > 0 && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{maintenanceItems.length}</span>}
-        </button>
-        <button 
-          className={`pb-4 px-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'persetujuan' ? 'text-orange-500 border-b-2 border-orange-500' : 'text-gray-500 hover:text-gray-800'}`}
-          onClick={() => setActiveTab('persetujuan')}
-        >
-          Persetujuan {pendingApprovals.length > 0 && <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">{pendingApprovals.length}</span>}
-        </button>
-        <button 
-          className={`pb-4 px-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'riwayat' ? 'text-purple-500 border-b-2 border-purple-500' : 'text-gray-500 hover:text-gray-800'}`}
-          onClick={() => setActiveTab('riwayat')}
-        >
-          Riwayat Pinjaman
-        </button>
+      {/* Navigation Tabs - Scrollable on Mobile */}
+      <div className="relative">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {[
+            { key: 'inventaris', label: 'Inventaris', icon: <Package className="w-4 h-4" />, color: 'emerald', count: null },
+            { key: 'kebutuhan', label: 'Kebutuhan', icon: <ClipboardList className="w-4 h-4" />, color: 'blue', count: kebutuhanItems.length },
+            { key: 'maintenance', label: 'Maintenance', icon: <Wrench className="w-4 h-4" />, color: 'red', count: maintenanceItems.length },
+            { key: 'persetujuan', label: 'Persetujuan', icon: <ShieldCheck className="w-4 h-4" />, color: 'orange', count: pendingApprovals.length },
+            { key: 'riwayat', label: 'Riwayat', icon: <History className="w-4 h-4" />, color: 'purple', count: null },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
+                activeTab === tab.key
+                  ? `bg-${tab.color}-500 text-white shadow-lg shadow-${tab.color}-500/25 scale-[1.02]`
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+              style={activeTab === tab.key ? {
+                backgroundColor: tab.color === 'emerald' ? '#10b981' : tab.color === 'blue' ? '#3b82f6' : tab.color === 'red' ? '#ef4444' : tab.color === 'orange' ? '#f97316' : '#a855f7',
+                color: 'white',
+                boxShadow: `0 4px 14px ${tab.color === 'emerald' ? 'rgba(16,185,129,0.3)' : tab.color === 'blue' ? 'rgba(59,130,246,0.3)' : tab.color === 'red' ? 'rgba(239,68,68,0.3)' : tab.color === 'orange' ? 'rgba(249,115,22,0.3)' : 'rgba(168,85,247,0.3)'}`
+              } : {}}
+            >
+              {tab.icon}
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.label}</span>
+              {tab.count > 0 && (
+                <span className={`text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full font-bold ${
+                  activeTab === tab.key ? 'bg-white/25 text-white' : 'bg-red-500 text-white'
+                }`}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        {/* Fade hint for scrollable area on mobile */}
+        <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-white dark:from-gray-950 pointer-events-none sm:hidden"></div>
       </div>
 
       {/* Content Table */}
-      <div className="glass-card p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h2 className="text-xl font-bold">
+      <div className="glass-card p-4 sm:p-6 overflow-hidden">
+        <div className="flex flex-col gap-4 mb-6">
+          <h2 className="text-lg sm:text-xl font-bold">
             {activeTab === 'inventaris' ? 'Daftar Semua Barang' : 
              activeTab === 'kebutuhan' ? 'Daftar Kebutuhan (Belum Ada)' : 
              activeTab === 'persetujuan' ? 'Persetujuan Pinjaman' :
              activeTab === 'riwayat' ? 'Riwayat Semua Pinjaman' :
              'Peringatan Perawatan & Pengembalian'}
           </h2>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input 
               type="text" 
               placeholder="Cari nama, ID, atau kategori..." 
-              className="input-field input-field-dark py-2 px-4 w-full sm:w-64"
+              className="input-field input-field-dark py-2 px-4 w-full sm:w-64 text-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <button onClick={exportToExcel} className="flex-1 sm:flex-none flex justify-center items-center gap-2 bg-green-50 text-green-600 hover:bg-green-100 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
-              <Download className="w-4 h-4" /> Export Excel
-            </button>
-            {(activeTab === 'inventaris' || activeTab === 'kebutuhan') && (
-              <button onClick={() => handleOpenModal()} className="flex-1 sm:flex-none btn-primary py-2 px-4 text-sm flex justify-center items-center gap-2">
-                <Plus className="w-4 h-4" /> Tambah Barang
+            <div className="flex gap-2">
+              <button onClick={exportToExcel} className="flex-1 sm:flex-none flex justify-center items-center gap-2 bg-green-50 text-green-600 hover:bg-green-100 px-3 py-2 rounded-xl text-sm font-medium transition-colors">
+                <Download className="w-4 h-4" /> <span className="hidden sm:inline">Export</span> Excel
               </button>
-            )}
+              {(activeTab === 'inventaris' || activeTab === 'kebutuhan') && (
+                <button onClick={() => handleOpenModal()} className="flex-1 sm:flex-none btn-primary py-2 px-3 sm:px-4 text-sm flex justify-center items-center gap-2">
+                  <Plus className="w-4 h-4" /> Tambah
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -393,8 +402,8 @@ export default function Dashboard() {
             )}
           </div>
         ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto -mx-4 sm:-mx-6">
+          <table className="w-full text-left text-sm min-w-[600px]">
             <thead className="bg-gray-50/50 dark:bg-gray-800/50 text-gray-500 border-b border-gray-100 dark:border-gray-800">
               <tr>
                 <th className="px-4 py-3 w-16">Foto</th>
@@ -451,101 +460,143 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* CRUD Modal */}
+      {/* CRUD Modal - Modern Full-screen on Mobile */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-6">{editingItem ? 'Edit Barang' : 'Tambah Barang Baru'}</h2>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium mb-1">Nama Barang</label>
-                <input required type="text" className="input-field input-field-dark" value={formData.nama_barang} onChange={e => setFormData({...formData, nama_barang: e.target.value})} />
-              </div>
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}>
+          <div 
+            className="bg-white dark:bg-gray-900 w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl max-h-[92vh] flex flex-col animate-in slide-in-from-bottom duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
               <div>
-                <label className="block text-sm font-medium mb-1">Kategori</label>
-                <input 
-                  required 
-                  list="kategori-list"
-                  type="text" 
-                  className="input-field input-field-dark" 
-                  value={formData.kategori} 
-                  onChange={e => setFormData({...formData, kategori: e.target.value})} 
-                  placeholder="Ketik atau pilih kategori" 
-                />
-                <datalist id="kategori-list">
-                  {daftarKategori.map((kategori, index) => (
-                    <option key={index} value={kategori} />
-                  ))}
-                </datalist>
+                <h2 className="text-lg font-bold">{editingItem ? 'Edit Barang' : 'Tambah Barang'}</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Lengkapi informasi barang di bawah</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
-                <select className="input-field input-field-dark" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
-                  <option>Dibutuhkan</option>
-                  <option>Tersedia</option>
-                  <option>Dipinjam</option>
-                  <option>Rusak</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Kondisi</label>
-                <select className="input-field input-field-dark" value={formData.kondisi} onChange={e => setFormData({...formData, kondisi: e.target.value})}>
-                  <option>Baik</option>
-                  <option>Rusak Ringan</option>
-                  <option>Rusak Berat</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Tipe Kepemilikan</label>
-                <select className="input-field input-field-dark" value={formData.tipe_kepemilikan} onChange={e => setFormData({...formData, tipe_kepemilikan: e.target.value})}>
-                  <option>Aset Beli</option>
-                  <option>Sewa Vendor</option>
-                  <option>Pinjam UNIMED</option>
-                  <option>Pinjam Desa</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Tenggat Pengembalian</label>
-                <input type="date" className="input-field input-field-dark" value={formData.tenggat_pengembalian} onChange={e => setFormData({...formData, tenggat_pengembalian: e.target.value})} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Lokasi Saat Ini</label>
-                <input type="text" className="input-field input-field-dark" value={formData.lokasi_saat_ini} onChange={e => setFormData({...formData, lokasi_saat_ini: e.target.value})} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">ID Kardus</label>
-                <input type="text" className="input-field input-field-dark" value={formData.id_kardus} onChange={e => setFormData({...formData, id_kardus: e.target.value})} placeholder="BOX-123" />
+              <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="overflow-y-auto flex-1 p-5 space-y-5">
+
+                {/* Nama Barang */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Nama Barang *</label>
+                  <input required type="text" placeholder="cth: Panci Besar" className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" value={formData.nama_barang} onChange={e => setFormData({...formData, nama_barang: e.target.value})} />
+                </div>
+
+                {/* Kategori & Status */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Kategori *</label>
+                    <input 
+                      required list="kategori-list" type="text" placeholder="Pilih/ketik"
+                      className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" 
+                      value={formData.kategori} onChange={e => setFormData({...formData, kategori: e.target.value})} 
+                    />
+                    <datalist id="kategori-list">
+                      {daftarKategori.map((kategori, index) => (
+                        <option key={index} value={kategori} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Status</label>
+                    <select className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+                      <option>Dibutuhkan</option>
+                      <option>Tersedia</option>
+                      <option>Dipinjam</option>
+                      <option>Rusak</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Kondisi & Kepemilikan */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Kondisi</label>
+                    <select className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none" value={formData.kondisi} onChange={e => setFormData({...formData, kondisi: e.target.value})}>
+                      <option>Baik</option>
+                      <option>Rusak Ringan</option>
+                      <option>Rusak Berat</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Kepemilikan</label>
+                    <select className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none" value={formData.tipe_kepemilikan} onChange={e => setFormData({...formData, tipe_kepemilikan: e.target.value})}>
+                      <option>Aset Beli</option>
+                      <option>Sewa Vendor</option>
+                      <option>Pinjam UNIMED</option>
+                      <option>Pinjam Desa</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Lokasi, Kardus, Tenggat */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Lokasi</label>
+                    <input type="text" placeholder="cth: Posko" className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" value={formData.lokasi_saat_ini} onChange={e => setFormData({...formData, lokasi_saat_ini: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">ID Kardus</label>
+                    <input type="text" placeholder="BOX-123" className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" value={formData.id_kardus} onChange={e => setFormData({...formData, id_kardus: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Tenggat</label>
+                    <input type="date" className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" value={formData.tenggat_pengembalian} onChange={e => setFormData({...formData, tenggat_pengembalian: e.target.value})} />
+                  </div>
+                </div>
+
+                {/* Upload Foto */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Foto Barang</label>
+                  <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-4 text-center hover:border-primary/50 transition-colors">
+                    {(formData.url_foto || imageFile) ? (
+                      <div className="flex items-center gap-4">
+                        <img 
+                          src={imageFile ? URL.createObjectURL(imageFile) : formData.url_foto} 
+                          alt="Preview" 
+                          className="w-16 h-16 object-cover rounded-xl border border-gray-200" 
+                        />
+                        <div className="flex-1 text-left">
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{imageFile ? imageFile.name : 'Foto tersimpan'}</p>
+                          <button type="button" onClick={() => { setImageFile(null); setFormData({...formData, url_foto: ''}); }} className="text-xs text-red-500 hover:text-red-600 mt-1">Hapus foto</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <ImageIcon className="w-8 h-8 mx-auto text-gray-300" />
+                        <div className="flex gap-2 justify-center">
+                          <label className="cursor-pointer inline-flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+                            <Package className="w-4 h-4" />
+                            Ambil Foto
+                            <input type="file" accept="image/*" capture="environment" onChange={e => setImageFile(e.target.files[0])} className="hidden" />
+                          </label>
+                          <label className="cursor-pointer inline-flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+                            <ImageIcon className="w-4 h-4" />
+                            Galeri
+                            <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} className="hidden" />
+                          </label>
+                        </div>
+                        <p className="text-[10px] text-gray-400">JPG, PNG (maks 5MB)</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
               </div>
 
-              {/* Upload Foto */}
-              <div className="sm:col-span-2 mt-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-                <label className="block text-sm font-medium mb-2">Foto Barang</label>
-                <div className="flex items-center gap-4">
-                  {(formData.url_foto || imageFile) && (
-                    <img 
-                      src={imageFile ? URL.createObjectURL(imageFile) : formData.url_foto} 
-                      alt="Preview" 
-                      className="w-16 h-16 object-cover rounded-lg border border-gray-300" 
-                    />
-                  )}
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={e => setImageFile(e.target.files[0])}
-                    className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-2">Unggah foto barang untuk mengetahui kondisi dan memverifikasi keberadaannya.</p>
-              </div>
-              
-              <div className="sm:col-span-2 flex justify-end gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                <button type="button" onClick={() => setIsModalOpen(false)} disabled={isUploading} className="px-6 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50">Batal</button>
-                <button type="submit" disabled={isUploading} className="btn-primary flex items-center gap-2 disabled:opacity-50">
-                  {isUploading ? (
-                    <>Mengunggah...</>
-                  ) : (
-                    <>Simpan Barang</>
-                  )}
+              {/* Sticky Footer */}
+              <div className="flex gap-3 p-5 border-t border-gray-100 dark:border-gray-800 flex-shrink-0 bg-white dark:bg-gray-900">
+                <button type="button" onClick={() => setIsModalOpen(false)} disabled={isUploading} className="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50">
+                  Batal
+                </button>
+                <button type="submit" disabled={isUploading} className="flex-[2] py-3 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/25 disabled:opacity-50 flex items-center justify-center gap-2">
+                  {isUploading ? 'Menyimpan...' : (editingItem ? 'Perbarui Barang' : 'Simpan Barang')}
                 </button>
               </div>
             </form>
