@@ -5,25 +5,45 @@ import { db } from "@/lib/firebase";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { Box, ArrowLeft, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 export default function QRScannerPage() {
+  const searchParams = useSearchParams();
   const [scannedId, setScannedId] = useState(null);
   const [boxItems, setBoxItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Cek apakah ada parameter ID di URL (jika di-scan dari kamera bawaan HP)
+    const urlId = searchParams.get('id');
+    if (urlId) {
+      setScannedId(urlId);
+      fetchBoxContents(urlId);
+      return; // Tidak perlu menyalakan kamera web jika sudah dapat dari URL
+    }
+
     const scanner = new Html5QrcodeScanner(
       "qr-reader",
-      { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
+      { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 }, 
+        rememberLastUsedCamera: true,
+        videoConstraints: { facingMode: "environment" }
+      },
       /* verbose= */ false
     );
 
     scanner.render(
       (decodedText) => {
         scanner.pause(true);
-        setScannedId(decodedText);
-        fetchBoxContents(decodedText);
+        // Jika QR berisi full URL, ekstrak ID-nya. Jika berisi text biasa, langsung pakai.
+        let finalId = decodedText;
+        if (decodedText.includes('/member/scan?id=')) {
+          finalId = new URL(decodedText).searchParams.get('id');
+        }
+        setScannedId(finalId);
+        fetchBoxContents(finalId);
       },
       (errorMessage) => {
         // ignore ongoing scanning errors
@@ -33,7 +53,7 @@ export default function QRScannerPage() {
     return () => {
       scanner.clear().catch(error => console.error("Failed to clear scanner", error));
     };
-  }, []);
+  }, [searchParams]);
 
   const fetchBoxContents = async (boxId) => {
     setLoading(true);

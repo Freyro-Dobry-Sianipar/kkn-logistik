@@ -11,7 +11,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login, user, loading, loginAsDemoAdmin, loginAsDemoMember } = useAuth();
+  const { login, user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -115,25 +115,7 @@ export default function Home() {
               </button>
             </form>
 
-            <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/10">
-              <p className="text-center text-xs opacity-60 mb-4 font-medium uppercase tracking-wider">Pintasan Mode Demo</p>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => { loginAsDemoAdmin(); router.push('/admin/dashboard'); }}
-                  className="flex-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 py-2.5 rounded-xl text-sm font-semibold transition-all border border-blue-500/20"
-                >
-                  Admin Dasbor
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { loginAsDemoMember(); router.push('/member/catalog'); }}
-                  className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 py-2.5 rounded-xl text-sm font-semibold transition-all border border-emerald-500/20"
-                >
-                  Katalog Member
-                </button>
-              </div>
-            </div>
+
           </div>
         </div>
       </div>

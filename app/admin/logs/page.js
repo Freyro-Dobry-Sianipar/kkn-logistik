@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Plus, Activity } from "lucide-react";
+import { Plus, Activity, Download } from "lucide-react";
+import * as XLSX from 'xlsx';
 
 export default function OperationalLogs() {
   const [logs, setLogs] = useState([]);
@@ -36,6 +37,27 @@ export default function OperationalLogs() {
     } catch (error) {
       console.error("Error adding log", error);
     }
+  };
+
+  const exportToExcel = () => {
+    if (logs.length === 0) {
+      alert("Tidak ada data untuk diekspor");
+      return;
+    }
+
+    const exportData = logs.map(log => ({
+      "ID Log": log.id_log || "-",
+      "Tanggal": log.tanggal,
+      "Jenis Pengeluaran": log.jenis_pengeluaran,
+      "Kendaraan": log.kendaraan,
+      "Nominal (Rp)": Number(log.nominal),
+      "Deskripsi": log.deskripsi || "-"
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Log Operasional");
+    XLSX.writeFile(workbook, `Log_Operasional_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const totalPengeluaran = logs.reduce((acc, curr) => acc + Number(curr.nominal), 0);
@@ -85,18 +107,23 @@ export default function OperationalLogs() {
           </form>
         </div>
 
-        <div className="md:col-span-2 glass-card p-6">
-          <div className="flex justify-between items-end mb-6">
+        <div className="md:col-span-2 glass-card p-6 flex flex-col">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4 border-b border-gray-100 dark:border-gray-800 pb-4">
             <h2 className="text-xl font-bold">Riwayat Pengeluaran</h2>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Total Pengeluaran</p>
-              <p className="text-2xl font-bold text-orange-600">Rp {totalPengeluaran.toLocaleString('id-ID')}</p>
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
+              <button onClick={exportToExcel} className="flex items-center gap-2 bg-green-50 text-green-600 hover:bg-green-100 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+                <Download className="w-4 h-4" /> Export Excel
+              </button>
+              <div className="text-right">
+                <p className="text-sm text-gray-500">Total Pengeluaran</p>
+                <p className="text-2xl font-bold text-orange-600">Rp {totalPengeluaran.toLocaleString('id-ID')}</p>
+              </div>
             </div>
           </div>
           
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
             {logs.map(log => (
-              <div key={log.id} className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-gray-800/50 flex justify-between items-center hover:bg-white transition-colors">
+              <div key={log.id} className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-gray-800/50 flex flex-col sm:flex-row justify-between sm:items-center gap-2 hover:bg-white transition-colors">
                 <div>
                   <p className="font-semibold text-lg">{log.jenis_pengeluaran} - {log.kendaraan}</p>
                   <p className="text-sm text-gray-500">{new Date(log.tanggal).toLocaleDateString('id-ID')} • {log.deskripsi}</p>

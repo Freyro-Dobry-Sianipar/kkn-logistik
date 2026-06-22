@@ -92,7 +92,12 @@ export default function BoxesPage() {
             boxes.map(box => (
               <div key={box.id} className="glass-card p-6 flex flex-col items-center text-center">
                 <div id={`qr-${box.id}`} className="p-4 bg-white rounded-xl shadow-sm mb-4">
-                  <QRCodeSVG value={box.id_kardus} size={120} level="H" includeMargin={true} />
+                  <QRCodeSVG 
+                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/member/scan?id=${box.id_kardus}`} 
+                    size={120} 
+                    level="H" 
+                    includeMargin={true} 
+                  />
                   <p className="mt-2 text-xs font-mono text-gray-600">{box.id_kardus}</p>
                 </div>
                 <h3 className="font-bold text-lg leading-tight">{box.nama_kardus}</h3>

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { collection, getDocs, addDoc, updateDoc, doc, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
-import { Search, Filter, PackageCheck, AlertCircle, HandHeart, QrCode } from "lucide-react";
+import { Search, Filter, PackageCheck, AlertCircle, HandHeart, QrCode, Clock } from "lucide-react";
 import Link from "next/link";
 
 export default function CatalogPage() {
@@ -34,7 +34,7 @@ export default function CatalogPage() {
 
   const fetchMyTransactions = async () => {
     if (!user) return;
-    const q = query(collection(db, "transactions"), where("id_pengguna", "==", user.uid), where("status", "==", "Aktif"));
+    const q = query(collection(db, "transactions"), where("id_pengguna", "==", user.uid), where("status", "in", ["Aktif", "Menunggu"]));
     const querySnapshot = await getDocs(q);
     const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setMyTransactions(data);
@@ -45,7 +45,7 @@ export default function CatalogPage() {
     if (!borrowModal.item || !user) return;
     
     try {
-      await updateDoc(doc(db, "items", borrowModal.item.id), { status: "Dipinjam" });
+      await updateDoc(doc(db, "items", borrowModal.item.id), { status: "Menunggu Persetujuan" });
       await addDoc(collection(db, "transactions"), {
         id_transaksi: "TRX-" + Date.now(),
         id_barang: borrowModal.item.id,
@@ -54,14 +54,14 @@ export default function CatalogPage() {
         nama_peminjam: user.nama,
         tanggal_pinjam: new Date().toISOString(),
         tanggal_kembali: null,
-        status: "Aktif",
+        status: "Menunggu",
         catatan: catatan
       });
       setBorrowModal({ open: false, item: null });
       setCatatan("");
       fetchItems();
       fetchMyTransactions();
-      alert("Berhasil meminjam barang!");
+      alert("Pengajuan pinjaman berhasil dikirim! Menunggu persetujuan Admin.");
     } catch (error) {
       console.error("Error borrowing", error);
     }
@@ -157,7 +157,7 @@ export default function CatalogPage() {
                       <PackageCheck className="w-16 h-16 text-gray-300" />
                     )}
                     <div className="absolute top-3 right-3">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${item.status === 'Tersedia' ? 'bg-green-500 text-white' : item.status === 'Dipinjam' ? 'bg-blue-500 text-white' : 'bg-red-500 text-white'}`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${item.status === 'Tersedia' ? 'bg-green-500 text-white' : item.status === 'Menunggu Persetujuan' ? 'bg-orange-500 text-white' : item.status === 'Dipinjam' ? 'bg-blue-500 text-white' : 'bg-red-500 text-white'}`}>
                         {item.status}
                       </span>
                     </div>
@@ -167,7 +167,7 @@ export default function CatalogPage() {
                     <h3 className="font-bold text-lg mb-2 leading-tight">{item.nama_barang}</h3>
                     <p className="text-sm text-gray-500 mb-4 flex-1">Kondisi: {item.kondisi}</p>
                     <button disabled={item.status !== "Tersedia"} onClick={() => setBorrowModal({ open: true, item })} className="w-full btn-primary py-2.5 rounded-xl disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed">
-                      {item.status === "Tersedia" ? "Pinjam Sekarang" : "Tidak Tersedia"}
+                      {item.status === "Tersedia" ? "Ajukan Pinjaman" : (item.status === "Menunggu Persetujuan" ? "Sedang Diajukan" : "Tidak Tersedia")}
                     </button>
                   </div>
                 </div>
@@ -187,14 +187,21 @@ export default function CatalogPage() {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="font-bold text-xl mb-1">{trx.nama_barang}</h3>
-                      <p className="text-sm text-gray-500">Dipinjam: {new Date(trx.tanggal_pinjam).toLocaleDateString('id-ID')}</p>
+                      <p className="text-sm text-gray-500">{trx.status === "Menunggu" ? "Diajukan: " : "Dipinjam: "} {new Date(trx.tanggal_pinjam).toLocaleDateString('id-ID')}</p>
                     </div>
-                    <div className="p-2 bg-primary/10 text-primary rounded-full"><HandHeart className="w-5 h-5"/></div>
+                    <div className="p-2 bg-primary/10 text-primary rounded-full">
+                      {trx.status === "Menunggu" ? <Clock className="w-5 h-5" /> : <HandHeart className="w-5 h-5"/>}
+                    </div>
                   </div>
+                  {trx.status === "Menunggu" && (
+                    <p className="text-sm text-orange-600 font-medium mb-2 border border-orange-200 bg-orange-50 px-3 py-1.5 rounded-lg inline-block w-fit">Menunggu Persetujuan Admin</p>
+                  )}
                   {trx.catatan && <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-lg mb-4 italic">"{trx.catatan}"</p>}
-                  <button onClick={() => setReturnModal({ open: true, transaction: trx, item: itemDetails })} className="mt-auto w-full bg-white dark:bg-gray-800 border-2 border-primary text-primary hover:bg-primary hover:text-white font-bold py-2.5 rounded-xl transition-all">
-                    Kembalikan Barang
-                  </button>
+                  {trx.status === "Aktif" && (
+                    <button onClick={() => setReturnModal({ open: true, transaction: trx, item: itemDetails })} className="mt-auto w-full bg-white dark:bg-gray-800 border-2 border-primary text-primary hover:bg-primary hover:text-white font-bold py-2.5 rounded-xl transition-all">
+                      Kembalikan Barang
+                    </button>
+                  )}
                 </div>
               );
             })
@@ -211,11 +218,11 @@ export default function CatalogPage() {
             <form onSubmit={handleBorrow} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Keperluan / Tujuan</label>
-                <textarea className="input-field input-field-dark" rows={3} placeholder="Untuk survei, dll..." value={catatan} onChange={e => setCatatan(e.target.value)} />
+                <textarea className="input-field input-field-dark" rows={3} placeholder="Untuk survei, dll..." value={catatan} onChange={e => setCatatan(e.target.value)} required />
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <button type="button" onClick={() => setBorrowModal({ open: false, item: null })} className="px-6 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">Batal</button>
-                <button type="submit" className="btn-primary">Konfirmasi</button>
+                <button type="submit" className="btn-primary">Kirim Pengajuan</button>
               </div>
             </form>
           </div>
